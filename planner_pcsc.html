@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planner PCSC com Firebase</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    
+const firebaseConfig = {
+  apiKey: "AIzaSyAXq_M0igRtgGTKux-jcx_wNysPkJnrydw",
+  authDomain: "policia-civil-sc.firebaseapp.com",
+  projectId: "policia-civil-sc",
+  storageBucket: "policia-civil-sc.firebasestorage.app",
+  messagingSenderId: "834706585932",
+  appId: "1:834706585932:web:b2fab9bbce3df4c25877e9",
+  measurementId: "G-9L1001DSMM"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+  <style>
+    @media (max-width: 768px) { html { font-size: 90%; } }
+    @media (max-width: 480px) { html { font-size: 80%; } }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen p-4 flex flex-col items-center">
+  <div class="w-full max-w-4xl space-y-6">
+    <h1 class="text-3xl font-bold text-center text-blue-700">Planner PCSC 🔐</h1>
+    <div class="text-center" id="userInfo"></div>
+    <div class="text-center">
+      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Entrar com Google</button>
+      <button id="logoutBtn" class="hidden bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Sair</button>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <div class="w-full bg-gray-300 rounded-full h-4">
+        <div id="barraProgresso" class="bg-blue-600 h-4 rounded-full transition-all" style="width: 0%"></div>
+      </div>
+      <p id="textoProgresso" class="text-center text-sm">0% concluído</p>
+      <p id="tempoTotal" class="text-center text-sm text-gray-600">Tempo total estudado: 0h 0m 0s</p>
+      <div id="conteudo"></div>
+    </div>
+
+    <div id="cronometroModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center z-50">
+      <div class="flex flex-col items-center">
+        <div id="cronometro" class="text-5xl font-bold text-green-400 animate-pulse">00:00:00</div>
+        <button onclick="finalizarEstudo()" class="mt-6 bg-green-600 text-white px-6 py-3 rounded text-lg hover:bg-green-700">
+          ✅ Finalizar Estudo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let user = null;
+    let estado = {}, tempoTotal = 0;
+    let estudoAtual = null, tempo = 0, intervalo = null;
+
+    const estrutura = {
+      "Constitucional": ["Conceito de Direito Constitucional: Natureza e Objeto", "Art. 1º ao 4º - Princípios fundamentais", "Art. 5º - Direitos e deveres individuais e coletivos"],
+      "Administrativo": ["Conceitos, Fontes e Princípios do Direito Administrativo", "Administração Direta (Órgão Público e Agentes Públicos)"],
+      "Português": ["Leitura, interpretação e análise de textos", "Coesão e coerência textual", "Acentuação gráfica"]
+    };
+
+    function formatarTempo(s) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${h}h ${m}m ${sec}s`;
+    }
+
+    function atualizarProgresso() {
+      const total = Object.values(estrutura).flat().length;
+      const feitos = Object.values(estado).filter(Boolean).length;
+      const perc = Math.round((feitos / total) * 100);
+      document.getElementById('barraProgresso').style.width = `${perc}%`;
+      document.getElementById('textoProgresso').innerText = `${perc}% concluído`;
+      document.getElementById('tempoTotal').innerText = `Tempo total estudado: ${formatarTempo(tempoTotal)}`;
+    }
+
+    function renderizar() {
+      const container = document.getElementById('conteudo');
+      container.innerHTML = '';
+      for (const [disciplina, topicos] of Object.entries(estrutura)) {
+        const box = document.createElement('div');
+        box.className = "bg-white shadow p-4 rounded mb-4";
+        box.innerHTML = `<h2 class='text-xl font-semibold text-blue-600 mb-2'>${disciplina}</h2>`;
+
+        topicos.forEach((item) => {
+          const key = `${disciplina}::${item}`;
+          const linha = document.createElement('div');
+          linha.className = "flex justify-between items-center py-1 border-b gap-2 flex-wrap";
+
+          linha.innerHTML = `
+            <label class='flex items-center gap-2'>
+              <input type='checkbox' ${estado[key] ? 'checked' : ''} onchange='toggleCheckbox("${key}", this.checked)' />
+              ${item}
+            </label>
+            ${!estado[key] ? `<button onclick='iniciarEstudo("${disciplina}", "${item}")' class='text-sm text-green-600 hover:underline'>▶ Iniciar Estudo</button>` : ''}
+          `;
+
+          box.appendChild(linha);
+        });
+        container.appendChild(box);
+      }
+      atualizarProgresso();
+    }
+
+    function toggleCheckbox(key, checked) {
+      estado[key] = checked;
+      salvarNoFirestore();
+      renderizar();
+    }
+
+    function iniciarEstudo(disciplina, item) {
+      estudoAtual = `${disciplina}::${item}`;
+      tempo = 0;
+      document.getElementById('cronometroModal').classList.remove('hidden');
+      intervalo = setInterval(() => {
+        tempo++;
+        document.getElementById('cronometro').innerText = new Date(tempo * 1000).toISOString().substr(11, 8);
+      }, 1000);
+    }
+
+    function finalizarEstudo() {
+      clearInterval(intervalo);
+      if (estudoAtual) {
+        estado[estudoAtual] = true;
+        tempoTotal += tempo;
+        salvarNoFirestore();
+      }
+      estudoAtual = null;
+      document.getElementById('cronometroModal').classList.add('hidden');
+      renderizar();
+    }
+
+    function salvarNoFirestore() {
+      if (!user) return;
+      db.collection("usuarios").doc(user.uid).set({
+        progresso: estado,
+        tempoTotal: tempoTotal
+      });
+    }
+
+    function carregarDoFirestore() {
+      db.collection("usuarios").doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          estado = data.progresso || {};
+          tempoTotal = data.tempoTotal || 0;
+        }
+        renderizar();
+        document.getElementById('dashboard').classList.remove('hidden');
+      });
+    }
+
+    // Autenticação
+    document.getElementById('loginBtn').onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    };
+
+    document.getElementById('logoutBtn').onclick = () => auth.signOut();
+
+    auth.onAuthStateChanged(u => {
+      if (u) {
+        user = u;
+        document.getElementById('userInfo').innerText = `Bem-vindo, ${u.displayName}`;
+        document.getElementById('loginBtn').classList.add('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        carregarDoFirestore();
+      } else {
+        user = null;
+        estado = {};
+        tempoTotal = 0;
+        document.getElementById('userInfo').innerText = '';
+        document.getElementById('loginBtn').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.add('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
