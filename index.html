@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCSC</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    @media (max-width: 768px) { html { font-size: 90%; } }
+    @media (max-width: 480px) { html { font-size: 80%; } }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4">
+  <div class="w-full max-w-5xl space-y-6">
+    <h1 class="text-3xl font-bold text-center text-blue-400">EDITAL VERTICALIZADO PC SC</h1>
+
+    <div class="w-full bg-gray-700 rounded-full h-4">
+      <div id="barraProgresso" class="bg-blue-500 h-4 rounded-full transition-all" style="width: 0%"></div>
+    </div>
+    <p id="textoProgresso" class="text-center text-sm">0% concluído</p>
+    <p id="tempoTotal" class="text-center text-sm text-gray-400">Tempo total estudado: 0h 0m 0s</p>
+
+    <div id="conteudo"></div>
+  </div>
+
+  <div id="cronometroModal" class="fixed inset-0 bg-black hidden flex items-center justify-center z-50">
+    <div class="flex flex-col items-center">
+      <div id="cronometro" class="text-5xl font-bold text-green-400 animate-pulse">00:00:00</div>
+      <button onclick="finalizarEstudo()" class="mt-6 bg-green-600 text-white px-6 py-3 rounded text-lg hover:bg-green-700">
+        ✅ Finalizar Estudo
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const estrutura = {
+  "Constitucional": [
+    "Conceito de Direito Constitucional: Natureza e Objeto",
+    "Art. 1º ao 4º - Princípios fundamentais",
+    "Art. 5º - Direitos e deveres individuais e coletivos",
+    "Art. 6º ao 11 - Direitos Sociais",
+    "Art. 12 e 13 - Direitos de nacionalidade",
+    "Art. 14 ao 17 - Direitos políticos e partidos políticos",
+    "Art. 37 e 38 - Administração Pública (Disposições Gerais)",
+    "Art. 39 ao 42 - Dos Servidores Públicos",
+    "Art. 144 - Segurança Pública",
+    "Princípios do Direito Constitucional e Princípios Constitucional do Estado Brasileiro"
+  ],
+  "Administrativo": [
+    "Conceitos, Fontes e Princípios do Direito Administrativo",
+    "Administração Direta (Órgão Público e Agentes Públicos)",
+    "Administração Direta e Indireta (autarquias, agências reguladoras, agências executivas, fundações públicas, agências públicas, empresas públicas, sociedades de economia mista e consórcios públicos).",
+    "Entidades Paraestatais e Terceiro Setor (Serviços autônomos, Entidades de apoio, Organizações da sociedade civil de interesse público)",
+    "Atos Administrativos (Conceito, Classificação e Invalidação)",
+    "Poderes Administrativos (Hierárquico, Disciplinar, Regulamentar e de Polícia - Uso e Abuso do Poder)",
+    "Lei de Licitações (Lei nº 14.133/2021)",
+    "Contrato Administrativo: princípios gerais, espécies e rescisão",
+    "Serviços Públicos (princípios gerais)",
+    "Improbidade Administrativa (Lei nº 8.429/1992)",
+    "Responsabilidade Civil do Estado"
+  ],
+  "Legislação Institucional": [
+    "Art. 1º ao 31-D - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 32 ao 80 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 81 ao 101 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 102 ao 137 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 138 ao 173 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 174 ao 203 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 204 ao 226 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 244 ao 275 - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Anexos I, II, III, IV, V e VI - Lei nº 6.843/1986 (Estatuto da PCSC)",
+    "Art. 144 - Segurança Pública (Constituição Federal)",
+    "Art. 105 ao 109-A - Da Segurança Pública (Constituição Estadual)",
+    "Lei Complementar nº 611/2013 (Subsídio Agente da Autoridade Policial)",
+    "Lei nº 16.774/2015 (Jornada de Trabalho e Banco de Horas PCSC)",
+    "Lei Complementar nº  491/2010 (Estatuto Jurídico Disciplinar)",
+    "Lei Complementar n. 453/2009 (Plano de Carreira)",
+    "Lei nº 14.735/2023 (Lei Orgânica Nacional das Polícias Civis)"
+  ],
+  "Português": [
+    "Leitura, interpretação e análise de textos de diferentes gêneros textuais, verbais e não verbais",
+    "Efeitos de sentido produzidos nos textos. Coesão e coerência textual",
+    "Acentuação gráfica",
+    "Grafia dos vocábulos",
+    "Hifenização",
+    "Pontuação",
+    "Uso dos “porquês\"",
+    "Emprego das classes de palavras (Morfologia)",
+    "Concordância nominal",
+    "Concordância verbal",
+    "Regência nominal",
+    "Regência verbal",
+    "Fexão verbal",
+    "Flexão Nominal"
+  ],
+  "Informática": [
+    "Windows: fundamentos do Windows. Trabalho com pastas e arquivos - Configurações Básicas do Windows - Windows Explorer",
+    "Word: área de trabalho, barras de ferramentas, botões e menus do Word. Formatação de documentos no Word",
+    "Excel: área de trabalho, barras de ferramentas, botões e menus do Excel.Principais funções do Excel. Formatação. Classificação de dados. Gráficos.",
+    "Power Point",
+    "Redes de Computadores",
+    "Protocolos e Serviços de Internet",
+    "Correio Eletrônico",
+    "World Wide Web",
+    "Conceitos de Segurança na Internet",
+    "Procedimentos de Backup",
+    "Armazenamento de Dados na Nuvem",
+    "Celulares, Tablets e suas Tecnologias",
+    "Biometria",
+    "Moedas Virtuais"
+  ],
+  "Penal Comum": [
+    "Disposições constitucionais aplicáveis ao direito penal",
+    "Sujeito ativo e passivo da infração penal",
+    "Teoria do Crime (Tipicidade, ilicitude, culpabilidade, punibilidade)",
+    "Art. 1º ao 12 - Aplicação da Lei Penal",
+    "Art. 13 ao 25 -  Do Crime",
+    "Art. 26 ao 31 - Imputabilidade penal - Concurso de pessoas",
+    "Art. 121 ao 128 - Crimes contra a Vida",
+    "Art. 129 - Lesões Corporais",
+    "Art. 130 a 137 - Periclitação da Vida e da Saúde",
+    "Art. 138 a 145 - Crimes contra a Honra",
+    "Art. 146 a 154 - Crimes contra a Liberdade",
+    "Art. 155 ao 183 - Crimes contra o Patrimônio",
+    "Art. 213 ao 234-B - Crimes contra a Dignidade Sexual",
+    "Art. 289 ao 311 - Crimes contra a Fé pública",
+    "Art. 312 ao 327 - Crimes contra a administração pública (praticado por FUNCIONÁRIO PÚBLICO)",
+    "Art. 328 ao 337-D - Crimes contra a administração pública (praticador por PARTICULAR)",
+    "Art. 337-E ao 337-P - Dos Crimes em Licitações e Contratos Administrativos",
+    "Art. 338 ao 359 - Dos Crimes contra a Administração da Justiça",
+    "Art. 359-A ao 359-H - Dos Crimes contra as Finanças Públicas"
+  ],
+  "Processo Penal Comum": [
+    "Princípios constitucionais e infraconstitucionais do Direito Processual Penal",
+    "Art. 1º ao 3º - Aplicação da lei processual penal - Disposições preliminares do Código de Processo Penal",
+    "Art. 4º ao 23 - Inquérito Policial",
+    "Art. 24 ao 62 - Ação Penal",
+    "Art. 69 ao 91 - Competência + Jurisdição",
+    "Art. 155 ao 184 - Da Prova: Disposições Gerais, Corpo de Delito, Custódia e Perícias",
+    "Art. 185 ao 196 - Da Prova: Interrogatório do Acusado",
+    "Art. 197 ao 201 - Da Prova: Confissão e Ofendido",
+    "Art. 202 ao 225 - Da Prova: Testemunhas",
+    "Art. 226 ao 250 - Da Prova: Reconhecimento, Acareação, Documentos, Indícios e Busca e Apreensão",
+    "Art. 301 a 310 - Prisão em Flagrante",
+    "Art. 311 ao 320 - Prisão Preventiva,Prisão Domiciliar e Outras Medidas Cautelares",
+    "Lei nº 7.960/1989 (prisão temporária)",
+    "Lei nº 12.830/13 - Investigação Criminal Conduzida pelo Delegado de Polícia)"
+  ],
+  "Raciocínio Lógico": [
+    "Compreensão de estruturas lógicas",
+    "Lógica de argumentação: analogias, inferências, deduções e conclusões",
+    "Operações com conjuntos",
+    "Progressões aritméticas e geométricas",
+    "Funções",
+    "Razões e proporções",
+    "Porcentagem e regra de três",
+    "Princípios de contagem e probabilidade",
+    "Arranjos e permutações",
+    "Combinações"
+  ],
+  "Direitos Humanos": [
+    "O conceito de direitos humanos - Noções gerais sobre Direitos Humanos",
+    "Os direitos humanos na Organização das Nações Unidas",
+    "Os direitos humanos na Organização dos Estados Americanos",
+    "A Declaração Universal dos Direitos Humanos",
+    "A Corte Interamericana de Direitos Humanos",
+    "A natureza jurídica da incorporação de normas internacionais sobre direitos humanos ao direito interno brasileiro"
+  ],
+  "Arquivologia": [
+    "Noções básicas de teoria arquivistica",
+    "Terminologia arquivistica",
+    "O Arquivo intermediário",
+    "O Plano de Classificação",
+    "A Tabela de Temporalidade e Destinação de Documentos",
+    "O Sistema Informatizado de Gestão Arquivistica de Documentos - SIGAD",
+    "O arquivo permanente",
+    "Arranjo de documentos",
+    "A descrição arquivistica",
+    "Noções de conservação preventiva",
+    "Processos reprográficos, microfilmagem, digitalização"
+  ]
+};
+
+    const estado = JSON.parse(localStorage.getItem('pcsc_progress') || '{}');
+    let tempoTotal = parseInt(localStorage.getItem('pcsc_tempo_total') || '0');
+    let estudoAtual = null;
+    let tempo = 0;
+    let intervalo = null;
+
+    function formatar(s) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    }
+
+    function atualizarTempoTotal() {
+      const h = Math.floor(tempoTotal / 3600);
+      const m = Math.floor((tempoTotal % 3600) / 60);
+      const s = tempoTotal % 60;
+      document.getElementById('tempoTotal').innerText = `Tempo total estudado: ${h}h ${m}m ${s}s`;
+    }
+
+    function atualizarProgresso() {
+      const total = Object.values(estrutura).flat().length;
+      const feitos = Object.values(estado).filter(Boolean).length;
+      const perc = Math.round((feitos / total) * 100);
+      document.getElementById('barraProgresso').style.width = `${perc}%`;
+      document.getElementById('textoProgresso').innerText = `${perc}% concluído`;
+      atualizarTempoTotal();
+    }
+
+    function renderizar() {
+      const container = document.getElementById('conteudo');
+      container.innerHTML = '';
+      for (const [disciplina, topicos] of Object.entries(estrutura)) {
+        const box = document.createElement('div');
+        box.className = "bg-gray-800 shadow-lg p-4 rounded mb-4";
+        box.innerHTML = `<h2 class='text-xl font-semibold text-blue-300 mb-2'>${disciplina}</h2>`;
+
+        topicos.forEach((item) => {
+          const key = `${disciplina}::${item}`;
+          const linha = document.createElement('div');
+          linha.className = "flex justify-between items-center py-1 border-b gap-2 flex-wrap";
+
+          linha.innerHTML = `
+            <label class='flex items-center gap-2'>
+              <input type='checkbox' ${estado[key] ? 'checked' : ''} onchange='toggleCheckbox("${key}", this.checked)' />
+              ${item}
+            </label>
+            ${!estado[key] ? `<button onclick='iniciarEstudo("${disciplina}", "${item}")' class='text-sm text-green-600 hover:underline'>▶ Iniciar Estudo</button>` : ''}
+          `;
+
+          box.appendChild(linha);
+        });
+        container.appendChild(box);
+      }
+      atualizarProgresso();
+    }
+
+    function toggleCheckbox(key, checked) {
+      estado[key] = checked;
+      localStorage.setItem('pcsc_progress', JSON.stringify(estado));
+      renderizar();
+    }
+
+    function iniciarEstudo(disciplina, item) {
+      estudoAtual = `${disciplina}::${item}`;
+      tempo = 0;
+      document.getElementById('cronometroModal').classList.remove('hidden');
+      intervalo = setInterval(() => {
+        tempo++;
+        document.getElementById('cronometro').innerText = formatar(tempo);
+      }, 1000);
+    }
+
+    function finalizarEstudo() {
+      clearInterval(intervalo);
+      if (estudoAtual) {
+        estado[estudoAtual] = true;
+        tempoTotal += tempo;
+        localStorage.setItem('pcsc_progress', JSON.stringify(estado));
+        localStorage.setItem('pcsc_tempo_total', tempoTotal);
+      }
+      estudoAtual = null;
+      document.getElementById('cronometroModal').classList.add('hidden');
+      renderizar();
+    }
+
+    renderizar();
+  </script>
+</body>
+</html>
